@@ -91,17 +91,18 @@ app.post("/register", (req, res) => {
 
 app.get("/profile/:id", (req, res) => {
   const { id } = req.params;
-  let found = false;
-  database.users.map((user) => {
-    if (user.id === id) {
-      found = true;
-      res.json(user);
-    } /* else {
-      res.status(404).json("no such user");
-    } */
-  });
 
-  if (!found) res.status(400).json("not found");
+  db.select("*")
+    .from("users")
+    .where({ id })
+    .then((user) => {
+      if (user.length) {
+        res.json(user[0]);
+      } else {
+        res.status(400).json("Not Found");
+      }
+    })
+    .catch((err) => res.status(400).json("error getting user"));
 });
 
 app.put("/image", (req, res) => {
