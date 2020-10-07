@@ -1,24 +1,32 @@
 const express = require("express");
 const bodeyParser = require("body-parser");
-const bcrypt = require("bcrypt-nodejs");
+const bcrypt = require("bcrypt");
 const cors = require("cors");
 var knex = require("knex");
+require("dotenv").config();
+const port = process.env.PORT || 4000;
 
+// API
+
+// -App config
+const app = express();
+
+// -Middlewares
+app.use(cors());
+app.use(bodeyParser.json());
+
+// DB
 const db = knex({
   client: "pg",
   connection: {
     host: "127.0.0.1",
-    user: "postgres",
-    password: "ymhd01015791420",
-    database: "face-recognition",
+    user: `${process.env.DB_USER}`,
+    password: `${process.env.DB_PASSWORD}`,
+    database: `${process.env.DB}`,
   },
 });
 
-const app = express();
-app.use(cors());
-app.use(bodeyParser.json());
-
-// Routes
+// -API Routes
 
 app.get("/", (req, res) => {
   res.send(database.users);
@@ -30,7 +38,7 @@ app.post("/signin", (req, res) => {
     .where("email", "=", req.body.email)
     .then((data) => {
       const isValid = bcrypt.compareSync(req.body.password, data[0].hash);
-      if (isValid) {
+      if (isValid)
         return db
           .select("*")
           .from("users")
@@ -39,16 +47,16 @@ app.post("/signin", (req, res) => {
             res.json(user[0]);
           })
           .catch((err) => res.status(400).json("unable to get user"));
-      } else {
-        res.status(400).json("wrong credentials");
-      }
+
+      return res.status(400).json("wrong credentials");
     })
     .catch((err) => res.status(400).json("wrong credentials"));
 });
 
 app.post("/register", (req, res) => {
   const { email, name, password } = req.body;
-  const hash = bcrypt.hashSync(password);
+  const saltRounds = 10;
+  const hash = bcrypt.hashSync(password, saltRounds);
   db.transaction((trx) => {
     trx
       .insert({
@@ -65,9 +73,7 @@ app.post("/register", (req, res) => {
             email: LoginEmail[0],
             joined: new Date(),
           })
-          .then((user) => {
-            res.json(user[0]);
-          });
+          .then((user) => res.json(user[0]));
       })
       .then(trx.commit)
       .catch(trx.rollback);
@@ -81,11 +87,8 @@ app.get("/profile/:id", (req, res) => {
     .from("users")
     .where({ id })
     .then((user) => {
-      if (user.length) {
-        res.json(user[0]);
-      } else {
-        res.status(400).json("Not Found");
-      }
+      if (user.length) return res.json(user[0]);
+      return res.status(400).json("Not Found");
     })
     .catch((err) => res.status(400).json("error getting user"));
 });
@@ -96,10 +99,9 @@ app.put("/image", (req, res) => {
     .where("id", "=", id)
     .increment("entries", 1)
     .returning("entries")
-    .then((entries) => {
-      res.json(entries[0]);
-    })
+    .then((entries) => res.json(entries[0]))
     .catch((err) => res.status(400).json("unable to get entries"));
 });
 
-app.listen(4000, () => console.log("app is running on port 4000"));
+// - Listen command
+app.listen(port, () => console.log(`app is running on port ${port}`));
