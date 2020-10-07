@@ -2,6 +2,17 @@ const express = require("express");
 const bodeyParser = require("body-parser");
 const bcrypt = require("bcrypt-nodejs");
 const cors = require("cors");
+var knex = require("knex");
+
+const db = knex({
+  client: "pg",
+  connection: {
+    host: "127.0.0.1",
+    user: "postgres",
+    password: "ymhd01015791420",
+    database: "face-recognition",
+  },
+});
 
 const app = express();
 app.use(cors());
@@ -35,6 +46,12 @@ const database = {
   ],
 };
 
+db.select()
+  .table("users")
+  .then((data) => {
+    console.log(data);
+  });
+
 // Routes
 
 app.get("/", (req, res) => {
@@ -59,16 +76,17 @@ app.post("/register", (req, res) => {
     console.log(hash);
   });
 
-  database.users.push({
-    id: "125",
-    name: name,
-    email: email,
-    password: password,
-    entries: 0,
-    joined: new Date(),
-  });
-
-  res.json(database.users[database.users.length - 1]);
+  db("users")
+    .returning("*")
+    .insert({
+      name: name,
+      email: email,
+      joined: new Date(),
+    })
+    .then((user) => {
+      res.json(user[0]);
+    })
+    .catch((err) => res.status(400).json("Unable to register"));
 });
 
 app.get("/profile/:id", (req, res) => {
