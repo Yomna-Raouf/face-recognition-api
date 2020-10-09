@@ -32,8 +32,8 @@ const db = knex({
 });
 
 // -API Routes
-
-app.get("/", (req, res) => res.send(res.send(db.users)));
+// res.send(db.users))
+app.get("/", (req, res) => res.send("Helloooooo"));
 
 app.post("/signin", signin.handleSignin(db, bcrypt));
 
